@@ -24,6 +24,8 @@ class AsyncClientMixin(object):
     @coroutine
     def _request(self, method, url_or_endpoint, **kwargs):
         http_client = AsyncHTTPClient()
+        http_client = AsyncHTTPClient()
+
         if not url_or_endpoint.startswith(('http://', 'https://')):
             api_base_url = kwargs.pop('api_base_url', self.API_BASE_URL)
             url = '{base}{endpoint}'.format(
@@ -34,11 +36,11 @@ class AsyncClientMixin(object):
             url = url_or_endpoint
 
         headers = {}
-        params = kwargs.pop('params', {})
+        params = kwargs.get('params', {})
         if 'access_token' not in params:
             # 这里需要针对 tornado 特殊处理
-            access_token = self.access_token
-            if access_token:
+            access_token = None
+            if self.access_token:
                 if not self.expires_at:
                     # user provided access_token, just return it
                     access_token = self.access_token
@@ -46,9 +48,11 @@ class AsyncClientMixin(object):
                     timestamp = time.time()
                     if self.expires_at - timestamp > 60:
                         access_token = self.access_token
-            else:
+
+            if not access_token:
                 # fetch access
                 yield self.fetch_access_token()
+                access_token = self.access_token
 
             params['access_token'] = self.access_token
 
